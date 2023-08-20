@@ -1,10 +1,14 @@
 package main
 
 import (
+	"bookman/authenticate"
 	"bookman/config"
 	"bookman/db"
+	"bookman/handler"
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/sirupsen/logrus"
+	"net/http"
+	"time"
 )
 
 func main() {
@@ -31,4 +35,11 @@ func main() {
 	if err2 != nil {
 		logger.WithError(err2).Fatalln("ERROR Occurred While Creating Book Model")
 	}
+
+	auth, err := authenticate.NewAuth(gormDB, time.Minute*10, logger)
+	bookManagerServer := handler.BookManagerServer{DB: gormDB, Logger: logger, Authenticate: auth}
+
+	http.HandleFunc("/api/v1/auth/signup", bookManagerServer.SignUpHandler)
+
+	logger.WithError(http.ListenAndServe(":8080", nil)).Fatalln("can not setup the server")
 }
