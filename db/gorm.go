@@ -14,6 +14,7 @@ var (
 	DuplicateEmailError       = errors.New("This Email is Already Taken")
 	DuplicateUsernameError    = errors.New("This Username is Already Taken")
 	DuplicatePhoneNumberError = errors.New("This Phone Number is Already Taken")
+	GenderNotAllowedError     = errors.New("Only female, male, or others are acceptable as genders")
 )
 
 type GormDB struct {
@@ -68,6 +69,9 @@ func (gdb *GormDB) CreateNewUser(user *User) error {
 		return DuplicatePhoneNumberError
 	}
 
+	if !(user.Gender == "male" || user.Gender == "female" || user.Gender == "others") {
+		return GenderNotAllowedError
+	}
 	EncryptedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), 4)
 	if err != nil {
 		return err
