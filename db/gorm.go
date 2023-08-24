@@ -15,11 +15,13 @@ var (
 	DuplicateUsernameError    = errors.New("This Username is Already Taken")
 	DuplicatePhoneNumberError = errors.New("This Phone Number is Already Taken")
 	GenderNotAllowedError     = errors.New("Only female, male, or others are acceptable as genders")
+	UserNameNotFoundError     = errors.New("User not found")
+	DuplicateAuthorError      = errors.New("this author already exists in db")
 )
 
 type GormDB struct {
 	cfg config.Config
-	db  *gorm.DB
+	Db  *gorm.DB
 }
 
 func NewGormDB(cfg config.Config) (*GormDB, error) {
@@ -44,8 +46,8 @@ func NewGormDB(cfg config.Config) (*GormDB, error) {
 }
 
 func (gdb *GormDB) CreateSchemas() (error, error) {
-	err1 := gdb.db.AutoMigrate(&User{})
-	err2 := gdb.db.AutoMigrate(&Book{})
+	err1 := gdb.Db.AutoMigrate(&User{})
+	err2 := gdb.Db.AutoMigrate(&Book{})
 	if err1 != nil || err2 != nil {
 		return err1, err2
 	}
@@ -54,17 +56,17 @@ func (gdb *GormDB) CreateSchemas() (error, error) {
 
 func (gdb *GormDB) CreateNewUser(user *User) error {
 	var count int64
-	gdb.db.Model(&User{}).Where("username = ?", user.Username).Count(&count)
+	gdb.Db.Model(&User{}).Where("username = ?", user.Username).Count(&count)
 	if count != 0 {
 		return DuplicateUsernameError
 	}
 
-	gdb.db.Model(&User{}).Where("email = ?", user.Email).Count(&count)
+	gdb.Db.Model(&User{}).Where("email = ?", user.Email).Count(&count)
 	if count != 0 {
 		return DuplicateEmailError
 	}
 
-	gdb.db.Model(&User{}).Where("phone_number = ?", user.PhoneNumber).Count(&count)
+	gdb.Db.Model(&User{}).Where("phone_number = ?", user.PhoneNumber).Count(&count)
 	if count != 0 {
 		return DuplicatePhoneNumberError
 	}
@@ -79,16 +81,20 @@ func (gdb *GormDB) CreateNewUser(user *User) error {
 
 	user.Password = string(EncryptedPassword)
 
-	response := gdb.db.Create(user)
+	response := gdb.Db.Create(user)
 	return response.Error
 }
 
 func (gdb *GormDB) GetUserByUsername(username string) (*User, error) {
 	var user User
-	err := gdb.db.Where(&User{Username: username}).First(&user).Error
+	err := gdb.Db.Where(&User{Username: username}).First(&user).Error
 	if err != nil {
 		return nil, err
 	}
 
 	return &user, nil
+}
+
+func (gdb *GormDB) CreateNewBook(book *Book) error {
+	return gdb.Db.Create(&book).Error
 }

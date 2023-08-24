@@ -7,16 +7,6 @@ import (
 	"net/http"
 )
 
-type signupRequestBody struct {
-	Username    string `json:"user_name" binding:"required"`
-	Email       string `json:"email" binding:"required"`
-	Password    string `json:"password"`
-	FirstName   string `json:"first_name" binding:"required"`
-	LastName    string `json:"last_name" binding:"required"`
-	PhoneNumber string `json:"phone_number" binding:"required"`
-	Gender      string `json:"gender" binding:"required"`
-}
-
 func (bm *BookManagerServer) SignUpHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -29,25 +19,15 @@ func (bm *BookManagerServer) SignUpHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	var srb signupRequestBody
-	err = json.Unmarshal(reqData, &srb)
+	var NewUser db.User
+	err = json.Unmarshal(reqData, &NewUser)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		bm.Logger.WithError(err).Warn("Cannot Unmarshal Request Body")
 		return
 	}
 
-	NewUser := &db.User{
-		Username:    srb.Username,
-		Email:       srb.Email,
-		Password:    srb.Password,
-		FirstName:   srb.FirstName,
-		LastName:    srb.LastName,
-		PhoneNumber: srb.PhoneNumber,
-		Gender:      srb.Gender,
-	}
-
-	err = bm.DB.CreateNewUser(NewUser)
+	err = bm.DB.CreateNewUser(&NewUser)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		response1 := map[string]interface{}{

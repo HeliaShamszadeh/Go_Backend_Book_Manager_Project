@@ -40,6 +40,9 @@ func main() {
 	bookManagerServer := handler.BookManagerServer{DB: gormDB, Logger: logger, Authenticate: auth}
 
 	http.HandleFunc("/api/v1/auth/signup", bookManagerServer.SignUpHandler)
+	http.HandleFunc("/api/v1/auth/login", bookManagerServer.LoginHandler)
+	http.HandleFunc("/api/v1/createbooks", bookManagerServer.CreateBookHandler)
+	http.HandleFunc("/api/v1/books", bookManagerServer.GetAllBooksHandler)
 
 	logger.WithError(http.ListenAndServe(":8080", nil)).Fatalln("can not setup the server")
 }
