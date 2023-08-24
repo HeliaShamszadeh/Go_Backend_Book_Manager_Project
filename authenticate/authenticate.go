@@ -10,6 +10,13 @@ import (
 	"time"
 )
 
+var (
+	IncorrectPasswordErr = errors.New("Incorrect Password")
+	EmptyTokenErr        = errors.New("Empty Token String")
+	InvalidTokenErr      = errors.New("Invalid Access Token")
+	CannotValidateToken  = errors.New("Cannot Validata Token")
+)
+
 type Authenticate struct {
 	database              *db.GormDB
 	logger                *logrus.Logger
@@ -39,7 +46,7 @@ func NewAuth(db *db.GormDB, jwtExpirationDuration time.Duration, logger *logrus.
 
 	// Check database
 	if db == nil {
-		return nil, errors.New("database can not be nil")
+		return nil, errors.New("database cannot be nil")
 	}
 
 	return &Authenticate{
@@ -59,7 +66,7 @@ func (a *Authenticate) Login(cred Credential) (*Token, error) {
 	// Check password
 	err = bcrypt.CompareHashAndPassword([]byte(account.Password), []byte(cred.Password))
 	if err != nil {
-		return nil, errors.New("the password is not correct")
+		return nil, IncorrectPasswordErr
 	}
 
 	// Create JWT token
@@ -83,4 +90,30 @@ func generateRandomKey() ([]byte, error) {
 		return nil, err
 	}
 	return jwtKey, nil
+}
+
+func (a *Authenticate) GetUsernameByToken(token string) (username string, err error) {
+
+	if token == "" {
+		return "", EmptyTokenErr
+	}
+	c := &claims{}
+
+	jwtToken, err := jwt.ParseWithClaims(token, c, func(token *jwt.Token) (interface{}, error) {
+		return a.secretKey, nil
+	})
+	if err != nil {
+		if err == jwt.ErrSignatureInvalid {
+			return "", InvalidTokenErr
+		} else {
+			return "", CannotValidateToken
+		}
+	}
+
+	if !jwtToken.Valid {
+		return "", InvalidTokenErr
+	} else {
+		return c.Username, nil
+	}
+
 }
