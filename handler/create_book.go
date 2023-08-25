@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// request body format
 type createBookRequestBody struct {
 	Name            string    `json:"name"`
 	Author          author    `json:"author"`
@@ -20,6 +21,7 @@ type createBookRequestBody struct {
 	Publisher       string    `json:"publisher"`
 }
 
+// author info
 type author struct {
 	FirstName   string    `json:"first_name"`
 	LastName    string    `json:"last_name"`
@@ -27,12 +29,15 @@ type author struct {
 	Nationality string    `json:"nationality"`
 }
 
+// CreateBookHandler handles /api/v1/createbooks
 func (bm *BookManagerServer) CreateBookHandler(w http.ResponseWriter, r *http.Request) {
+	// check the request method
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
+	// get access token from header
 	AuthorizationToken := r.Header.Get("Authorization")
 	if AuthorizationToken == "" {
 		response := map[string]interface{}{
@@ -44,6 +49,7 @@ func (bm *BookManagerServer) CreateBookHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// find username by token
 	username, err := bm.Authenticate.GetUsernameByToken(AuthorizationToken)
 	if err != nil {
 		if err == authenticate.CannotValidateToken {
@@ -57,6 +63,7 @@ func (bm *BookManagerServer) CreateBookHandler(w http.ResponseWriter, r *http.Re
 		}
 	}
 
+	// find user by its username
 	account, err := bm.DB.GetUserByUsername(username)
 	if err == db.UserNameNotFoundError {
 		bm.Logger.WithError(err).Warn()
@@ -68,12 +75,14 @@ func (bm *BookManagerServer) CreateBookHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// read the request body
 	reqBody, err := io.ReadAll(r.Body)
 	if r.Body == nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
+	// unmarshalling request body
 	var NewBook createBookRequestBody
 	err = json.Unmarshal(reqBody, &NewBook)
 	if err != nil {
@@ -82,6 +91,7 @@ func (bm *BookManagerServer) CreateBookHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// add new book to database
 	newBook := &db.Book{
 		Name:        NewBook.Name,
 		Category:    NewBook.Category,
@@ -107,13 +117,14 @@ func (bm *BookManagerServer) CreateBookHandler(w http.ResponseWriter, r *http.Re
 		"message": "book was created successfully",
 	}
 
-	respone, err := json.Marshal(message)
+	// marshalling response body
+	response, err := json.Marshal(message)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		bm.Logger.WithError(err).Error("error trying to marshal the respone message")
+		bm.Logger.WithError(err).Error("error trying to marshal the response message")
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write(respone)
+	w.Write(response)
 }

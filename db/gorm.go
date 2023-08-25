@@ -10,20 +10,22 @@ import (
 	"gorm.io/gorm"
 )
 
+// defining possible errors for defining database and CRUD
 var (
 	DuplicateEmailError       = errors.New("This Email is Already Taken")
 	DuplicateUsernameError    = errors.New("This Username is Already Taken")
 	DuplicatePhoneNumberError = errors.New("This Phone Number is Already Taken")
 	GenderNotAllowedError     = errors.New("Only female, male, or others are acceptable as genders")
 	UserNameNotFoundError     = errors.New("User not found")
-	DuplicateAuthorError      = errors.New("this author already exists in db")
 )
 
+// GormDB is a struct which keeps info of config and database
 type GormDB struct {
 	cfg config.Config
 	Db  *gorm.DB
 }
 
+// NewGormDB creates a new database (as a struct)
 func NewGormDB(cfg config.Config) (*GormDB, error) {
 	c := fmt.Sprintf("host=%s port=%d dbname=%s user=%s password=%s sslmode=disable",
 		cfg.Database.Host,
@@ -45,6 +47,7 @@ func NewGormDB(cfg config.Config) (*GormDB, error) {
 
 }
 
+// CreateSchemas creates the tables needed for keeping records(Users and Books)
 func (gdb *GormDB) CreateSchemas() (error, error) {
 	err1 := gdb.Db.AutoMigrate(&User{})
 	err2 := gdb.Db.AutoMigrate(&Book{})
@@ -54,6 +57,7 @@ func (gdb *GormDB) CreateSchemas() (error, error) {
 	return nil, nil
 }
 
+// CreateNewUser inserts a new user to Users' table
 func (gdb *GormDB) CreateNewUser(user *User) error {
 	var count int64
 	gdb.Db.Model(&User{}).Where("username = ?", user.Username).Count(&count)
@@ -85,6 +89,7 @@ func (gdb *GormDB) CreateNewUser(user *User) error {
 	return response.Error
 }
 
+// GetUserByUsername finds a record by selecting on username
 func (gdb *GormDB) GetUserByUsername(username string) (*User, error) {
 	var user User
 	err := gdb.Db.Where(&User{Username: username}).First(&user).Error
@@ -95,6 +100,7 @@ func (gdb *GormDB) GetUserByUsername(username string) (*User, error) {
 	return &user, nil
 }
 
+// CreateNewBook inserts new record of book to Books' table
 func (gdb *GormDB) CreateNewBook(book *Book) error {
 	return gdb.Db.Create(&book).Error
 }

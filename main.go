@@ -12,17 +12,21 @@ import (
 )
 
 func main() {
+
+	// creating new config
 	var cfg config.Config
 	err := cleanenv.ReadEnv(&cfg)
 	if err != nil {
 		panic(err.Error())
 	}
 
+	// creating new logger
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
 	logger.SetReportCaller(true)
 	logger.SetFormatter(&logrus.TextFormatter{ForceColors: true})
 
+	// creating new GormDB
 	gormDB, err := db.NewGormDB(cfg)
 	if err != nil {
 		logger.WithError(err).Fatalln("ERROR in the Database Migration")
@@ -36,9 +40,11 @@ func main() {
 		logger.WithError(err2).Fatalln("ERROR Occurred While Creating Book Model")
 	}
 
+	// creating new authenticate
 	auth, err := authenticate.NewAuth(gormDB, time.Minute*10, logger)
 	bookManagerServer := handler.BookManagerServer{DB: gormDB, Logger: logger, Authenticate: auth}
 
+	// calling handlers for APIs
 	http.HandleFunc("/api/v1/auth/signup", bookManagerServer.SignUpHandler)
 	http.HandleFunc("/api/v1/auth/login", bookManagerServer.LoginHandler)
 	http.HandleFunc("/api/v1/createbooks", bookManagerServer.CreateBookHandler)

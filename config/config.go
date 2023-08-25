@@ -1,5 +1,6 @@
 package config
 
+// Config struct has information needed for configuration
 type Config struct {
 	Database struct {
 		Host     string `env:"DATABASE_HOST" env-default:"localhost" env-description:"Database host for service"`

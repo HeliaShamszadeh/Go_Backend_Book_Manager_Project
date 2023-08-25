@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// User struct which holds user info
 type User struct {
 	gorm.Model
 	Username    string `gorm:"varchar(50),unique" json:"username"`
@@ -16,6 +17,7 @@ type User struct {
 	Gender      string `gorm:"type:varchar(50)" json:"gender"`
 }
 
+// Book struct which holds book info
 type Book struct {
 	gorm.Model
 	Name        string    `gorm:"type:varchar(255)"`
