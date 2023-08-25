@@ -7,23 +7,20 @@ import (
 	"net/http"
 )
 
-type loginRequestBody struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
 func (bm *BookManagerServer) LoginHandler(w http.ResponseWriter, r *http.Request) {
+	// check the request method
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
+	// check if request body is nil
 	if r.Body == nil {
 		w.WriteHeader(http.StatusBadRequest)
-		bm.Logger.Warn("request body is empty")
 		return
 	}
 
+	// read the request body
 	reqData, err := io.ReadAll(r.Body)
 	if err != nil {
 		bm.Logger.WithError(err).Warn("cannot read the request data")
@@ -31,7 +28,8 @@ func (bm *BookManagerServer) LoginHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	var lrb loginRequestBody
+	// unmarshall request body data
+	var lrb LoginRequestBody
 	err = json.Unmarshal(reqData, &lrb)
 	if err != nil {
 		bm.Logger.WithError(err).Warn("cannot unmarshal request body")
@@ -39,21 +37,30 @@ func (bm *BookManagerServer) LoginHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// login authentication
 	token, err := bm.Authenticate.Login(authenticate.Credential{
 		Username: lrb.Username,
 		Password: lrb.Password,
 	})
-
 	if err != nil {
-		w.WriteHeader(http.StatusForbidden)
-		return
+		if err == authenticate.IncorrectPasswordErr {
+			w.WriteHeader(http.StatusForbidden)
+			response, _ := json.Marshal(map[string]interface{}{"message": "incorrect password"})
+			w.Write(response)
+			return
+		} else {
+			w.WriteHeader(http.StatusForbidden)
+			bm.Logger.WithError(err).Warn("error logging the user in")
+			response, _ := json.Marshal(map[string]interface{}{"message": err.Error()})
+			w.Write(response)
+			return
+		}
 	}
 
-	response := map[string]interface{}{
+	// write response body
+	resBody, _ := json.Marshal(map[string]interface{}{
 		"access_token": token.TokenString,
-	}
-
-	resBody, _ := json.Marshal(response)
+	})
 	w.WriteHeader(http.StatusOK)
 	w.Write(resBody)
 }
