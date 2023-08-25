@@ -47,8 +47,8 @@ func main() {
 	// calling handlers for APIs
 	http.HandleFunc("/api/v1/auth/signup", bookManagerServer.SignUpHandler)
 	http.HandleFunc("/api/v1/auth/login", bookManagerServer.LoginHandler)
-	http.HandleFunc("/api/v1/createbooks", bookManagerServer.CreateBookHandler)
-	http.HandleFunc("/api/v1/books", bookManagerServer.GetAllBooksHandler)
+	http.HandleFunc("/api/v1/books", bookManagerServer.BooksRootHandler)
+	http.HandleFunc("/api/v1/books/", bookManagerServer.BooksSubTreeHandler)
 
 	logger.WithError(http.ListenAndServe(":8080", nil)).Fatalln("can not setup the server")
 }

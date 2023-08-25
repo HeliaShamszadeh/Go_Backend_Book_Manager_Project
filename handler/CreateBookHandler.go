@@ -6,30 +6,8 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"time"
 )
 
-// request body format
-type createBookRequestBody struct {
-	Name            string    `json:"name"`
-	Author          author    `json:"author"`
-	Category        string    `json:"category"`
-	Volume          int       `json:"volume"`
-	PublishedAt     time.Time `json:"published_at"`
-	Summary         string    `json:"summary"`
-	TableOfContents []string  `json:"table_of_contents"`
-	Publisher       string    `json:"publisher"`
-}
-
-// author info
-type author struct {
-	FirstName   string    `json:"first_name"`
-	LastName    string    `json:"last_name"`
-	Birthday    time.Time `json:"birthday"`
-	Nationality string    `json:"nationality"`
-}
-
-// CreateBookHandler handles /api/v1/createbooks
 func (bm *BookManagerServer) CreateBookHandler(w http.ResponseWriter, r *http.Request) {
 	// check the request method
 	if r.Method != http.MethodPost {
@@ -40,21 +18,24 @@ func (bm *BookManagerServer) CreateBookHandler(w http.ResponseWriter, r *http.Re
 	// get access token from header
 	AuthorizationToken := r.Header.Get("Authorization")
 	if AuthorizationToken == "" {
-		response := map[string]interface{}{
+		resBody, _ := json.Marshal(map[string]interface{}{
 			"message": authenticate.InvalidTokenErr,
-		}
-		resBody, _ := json.Marshal(response)
+		})
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(resBody)
 		return
 	}
 
-	// find username by token
+	// get the username using the access token
 	username, err := bm.Authenticate.GetUsernameByToken(AuthorizationToken)
 	if err != nil {
 		if err == authenticate.CannotValidateToken {
 			bm.Logger.WithError(err).Warn()
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		} else if err == authenticate.InvalidTokenErr {
+			bm.Logger.WithError(err).Warn()
+			w.WriteHeader(http.StatusBadRequest)
 			return
 		} else {
 			w.WriteHeader(http.StatusBadRequest)
@@ -63,27 +44,35 @@ func (bm *BookManagerServer) CreateBookHandler(w http.ResponseWriter, r *http.Re
 		}
 	}
 
-	// find user by its username
+	// get user account by access token
 	account, err := bm.DB.GetUserByUsername(username)
-	if err == db.UserNameNotFoundError {
-		bm.Logger.WithError(err).Warn()
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	} else if err != nil {
+	if err != nil {
+		if err == db.UserNameNotFoundError {
+			bm.Logger.WithError(err).Warn()
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 		w.WriteHeader(http.StatusInternalServerError)
 		bm.Logger.WithError(err).Warn("error while retrieving user from db")
 		return
 	}
 
-	// read the request body
-	reqBody, err := io.ReadAll(r.Body)
+	// check if request body is nil
 	if r.Body == nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	// unmarshalling request body
-	var NewBook createBookRequestBody
+	// read the request body
+	reqBody, err := io.ReadAll(r.Body)
+	if err != nil {
+		bm.Logger.WithError(err).Warn("cannot read the request data")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// unmarshalling request body data
+	var NewBook CreateBookRequestBody
 	err = json.Unmarshal(reqBody, &NewBook)
 	if err != nil {
 		bm.Logger.WithError(err).Warn("error while unmarshalling book")
@@ -91,7 +80,7 @@ func (bm *BookManagerServer) CreateBookHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// add new book to database
+	// insert new book to database by calling GormDB insert function
 	newBook := &db.Book{
 		Name:        NewBook.Name,
 		Category:    NewBook.Category,
@@ -113,18 +102,15 @@ func (bm *BookManagerServer) CreateBookHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	message := map[string]interface{}{
+	response, err := json.Marshal(map[string]interface{}{
 		"message": "book was created successfully",
-	}
-
-	// marshalling response body
-	response, err := json.Marshal(message)
+	})
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		bm.Logger.WithError(err).Error("error trying to marshal the response message")
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusCreated)
 	w.Write(response)
 }

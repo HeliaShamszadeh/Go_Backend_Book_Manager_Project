@@ -11,10 +11,10 @@ import (
 )
 
 var (
-	IncorrectPasswordErr = errors.New("Incorrect Password")
-	EmptyTokenErr        = errors.New("Empty Token String")
-	InvalidTokenErr      = errors.New("Invalid Access Token")
-	CannotValidateToken  = errors.New("Cannot Validata Token")
+	IncorrectPasswordErr = errors.New("incorrect password")
+	EmptyTokenErr        = errors.New("empty token string")
+	InvalidTokenErr      = errors.New("invalid access token")
+	CannotValidateToken  = errors.New("cannot validate token")
 )
 
 type Authenticate struct {
