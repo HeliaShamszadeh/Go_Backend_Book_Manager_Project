@@ -18,6 +18,7 @@ type Books struct {
 
 // GetAllBooksResponseBody for GetAllBooksHandler and GetBookByIdHandler
 type GetAllBooksResponseBody struct {
+	BookId      uint      `json:"id"`
 	Name        string    `json:"name"`
 	Author      string    `json:"author"`
 	Category    string    `json:"category"`
@@ -27,6 +28,7 @@ type GetAllBooksResponseBody struct {
 	Publisher   string    `json:"publisher"`
 }
 
+// GetBookByIdResponseBody for GetBookByIdHandler
 type GetBookByIdResponseBody struct {
 	Name            string    `json:"name"`
 	Author          string    `json:"author"`
@@ -44,6 +46,7 @@ type UpdateRequestBody struct {
 	Category string `json:"category"`
 }
 
+// TableOfContents for GetBookByIdHandler
 type TableOfContents struct {
 	Contents []string `json:"table_of_contents"`
 }
