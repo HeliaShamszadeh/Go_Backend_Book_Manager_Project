@@ -1,3 +1,3 @@
 ### Book Manager
 
-A book manager service for users in order to manage and maintain books.
+This is a book manager service which allows users to maintain books.
