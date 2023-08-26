@@ -49,13 +49,14 @@ func NewGormDB(cfg config.Config) (*GormDB, error) {
 }
 
 // CreateSchemas creates the tables needed for keeping records(Users and Books)
-func (gdb *GormDB) CreateSchemas() (error, error) {
+func (gdb *GormDB) CreateSchemas() (error, error, error) {
 	err1 := gdb.Db.AutoMigrate(&User{})
 	err2 := gdb.Db.AutoMigrate(&Book{})
-	if err1 != nil || err2 != nil {
-		return err1, err2
+	err3 := gdb.Db.AutoMigrate(&Content{})
+	if err1 != nil || err2 != nil || err3 != nil {
+		return err1, err2, err3
 	}
-	return nil, nil
+	return nil, nil, nil
 }
 
 // CreateNewUser inserts a new user to Users' table
@@ -131,6 +132,16 @@ func (gdb *GormDB) GetBookById(id int) (*Book, error) {
 	} else {
 		return &book, nil
 	}
+}
+
+// GetBookContents gets contents of a book
+func (gdb *GormDB) GetBookContents(id int) (*[]Content, error) {
+	var contents []Content
+	err := gdb.Db.Model(Content{}).Where("book_id = ?", id).Find(&contents).Error
+	if err != nil {
+		return nil, err
+	}
+	return &contents, nil
 }
 
 // UpdateBook updates name and category of a book

@@ -20,14 +20,16 @@ type User struct {
 // Book struct which holds book info
 type Book struct {
 	gorm.Model
-	Name        string    `gorm:"type:varchar(255)" json:"name"`
-	Category    string    `gorm:"type:varchar(255)" json:"category"`
-	Volume      int       `gorm:"type:integer" json:"volume"`
-	PublishedAt time.Time `gorm:"type:date" json:"published_at"`
-	Summary     string    `gorm:"type:text" json:"summary"`
-	Publisher   string    `gorm:"type:varchar(255)" json:"publisher"`
-	Author      Author    `gorm:"embedded" json:"author"`
-	UserID      uint      `gorm:"type:int"`
+	Name                string    `gorm:"type:varchar(255)" json:"name"`
+	Category            string    `gorm:"type:varchar(255)" json:"category"`
+	Volume              int       `gorm:"type:integer" json:"volume"`
+	PublishedAt         time.Time `gorm:"type:date" json:"published_at"`
+	TableOfContents     []Content `gorm:"constraint:on update:cascade, on delete:cascade"`
+	TableOfContentsJson []string  `gorm:"-:all" json:"table_of_contents"`
+	Summary             string    `gorm:"type:text" json:"summary"`
+	Publisher           string    `gorm:"type:varchar(255)" json:"publisher"`
+	Author              Author    `gorm:"embedded" json:"author"`
+	UserID              uint      `gorm:"type:int"`
 }
 
 type Author struct {
@@ -35,4 +37,10 @@ type Author struct {
 	LastName    string    `gorm:"type:varchar(50)" json:"last_name"`
 	Birthday    time.Time `gorm:"type:date" json:"birthday"`
 	Nationality string    `gorm:"type:varchar(50)" json:"nationality"`
+}
+
+type Content struct {
+	Id          uint
+	ContentName string `gorm:"type:varchar(255)"`
+	BookId      uint
 }

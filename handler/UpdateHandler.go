@@ -86,9 +86,15 @@ func (bm *BookManagerServer) UpdateBookHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// check if the request body is nil
+	if r.Body == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	// read the request body
 	reqBody, err := io.ReadAll(r.Body)
-	if reqBody == nil {
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

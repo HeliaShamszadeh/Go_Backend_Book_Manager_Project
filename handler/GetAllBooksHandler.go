@@ -56,9 +56,9 @@ func (bm *BookManagerServer) GetAllBooksHandler(w http.ResponseWriter, r *http.R
 	}
 
 	// append all records to a  preferred-form of data structure
-	var AllBooks []*GetBooksResponseBody
+	var AllBooks []*GetAllBooksResponseBody
 	for _, b := range *books.Books {
-		temp := &GetBooksResponseBody{
+		temp := &GetAllBooksResponseBody{
 			Name:        b.Name,
 			Author:      b.Author.FirstName + " " + b.Author.LastName,
 			Category:    b.Category,
