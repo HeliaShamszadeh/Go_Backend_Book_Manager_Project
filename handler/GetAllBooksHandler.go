@@ -59,6 +59,7 @@ func (bm *BookManagerServer) GetAllBooksHandler(w http.ResponseWriter, r *http.R
 	var AllBooks []*GetAllBooksResponseBody
 	for _, b := range *books.Books {
 		temp := &GetAllBooksResponseBody{
+			BookId:      b.ID,
 			Name:        b.Name,
 			Author:      b.Author.FirstName + " " + b.Author.LastName,
 			Category:    b.Category,
