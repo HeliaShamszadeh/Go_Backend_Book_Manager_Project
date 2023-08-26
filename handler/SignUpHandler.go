@@ -14,6 +14,12 @@ func (bm *BookManagerServer) SignUpHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// check if the request body is nil
+	if r.Body == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	// read the request body
 	reqData, err := io.ReadAll(r.Body)
 	if reqData == nil {

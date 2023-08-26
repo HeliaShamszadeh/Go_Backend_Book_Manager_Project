@@ -77,8 +77,15 @@ func (bm *BookManagerServer) GetBookByIdHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	// get book's contents
+	Contents, err := bm.DB.GetBookContents(BookIdInt)
+	if err != nil {
+		bm.Logger.WithError(err).Warn("error retrieving book's contents from database (GetBookContents)")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	// append exported data to a preferred data structure for marshalling(JSON)
-	Book := GetBooksResponseBody{
+	Book := GetBookByIdResponseBody{
 		Name:        ReturnedBook.Name,
 		Author:      ReturnedBook.Author.FirstName + " " + ReturnedBook.Author.LastName,
 		Category:    ReturnedBook.Category,
@@ -86,6 +93,11 @@ func (bm *BookManagerServer) GetBookByIdHandler(w http.ResponseWriter, r *http.R
 		PublishedAt: ReturnedBook.PublishedAt,
 		Summary:     ReturnedBook.Summary,
 		Publisher:   ReturnedBook.Publisher,
+	}
+
+	// add related contents to the result
+	for _, c := range *Contents {
+		Book.TableOfContents = append(Book.TableOfContents, c.ContentName)
 	}
 
 	// marshal the data

@@ -77,6 +77,14 @@ func (bm *BookManagerServer) CreateBookHandler(w http.ResponseWriter, r *http.Re
 
 	// unmarshalling request body data
 	var NewBook db.Book
+	var Table TableOfContents
+
+	err = json.Unmarshal(reqBody, &Table)
+	if err != nil {
+		bm.Logger.WithError(err).Warn("error while unmarshalling table of contents")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	err = json.Unmarshal(reqBody, &NewBook)
 	if err != nil {
 		bm.Logger.WithError(err).Warn("error while unmarshalling book")
@@ -84,6 +92,11 @@ func (bm *BookManagerServer) CreateBookHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 	NewBook.UserID = account.ID
+
+	// add each content to the book instance
+	for _, content := range Table.Contents {
+		NewBook.TableOfContents = append(NewBook.TableOfContents, db.Content{ContentName: content})
+	}
 
 	// insert new book to database
 	err = bm.DB.CreateNewBook(&NewBook)

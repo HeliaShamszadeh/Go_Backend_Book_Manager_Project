@@ -32,12 +32,15 @@ func main() {
 		logger.WithError(err).Fatalln("ERROR in the Database Migration")
 	}
 	logger.Infoln("Migrated Tables and Models Successfully!")
-	err1, err2 := gormDB.CreateSchemas()
+	err1, err2, err3 := gormDB.CreateSchemas()
 	if err1 != nil {
 		logger.WithError(err1).Fatalln("ERROR Occurred While Creating User Model")
 	}
 	if err2 != nil {
 		logger.WithError(err2).Fatalln("ERROR Occurred While Creating Book Model")
+	}
+	if err3 != nil {
+		logger.WithError(err2).Fatalln("ERROR Occurred While Creating Content Model")
 	}
 
 	// creating new authenticate
