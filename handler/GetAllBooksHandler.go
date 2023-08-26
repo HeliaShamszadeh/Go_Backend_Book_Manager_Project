@@ -16,23 +16,34 @@ func (bm *BookManagerServer) GetAllBooksHandler(w http.ResponseWriter, r *http.R
 	// get access token from header and check related errors
 	AuthorizationToken := r.Header.Get("Authorization")
 	if AuthorizationToken == "" {
-		response := map[string]interface{}{
-			"message": authenticate.InvalidTokenErr,
-		}
-		resBody, _ := json.Marshal(response)
+		resBody, _ := json.Marshal(map[string]interface{}{
+			"message": authenticate.EmptyTokenErr.Error(),
+		})
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(resBody)
 		return
 	}
 
-	// check if this username exists
+	// check if the username exists
 	_, err := bm.Authenticate.GetUsernameByToken(AuthorizationToken)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		bm.Logger.WithError(err).Warn("could not log in the user")
-		response, _ := json.Marshal(map[string]interface{}{"message": err.Error()})
-		w.Write(response)
-		return
+		if err == authenticate.CannotValidateTokenErr {
+			bm.Logger.WithError(err).Warn()
+			w.WriteHeader(http.StatusBadRequest)
+			response, _ := json.Marshal(map[string]interface{}{"message": authenticate.CannotValidateTokenErr.Error()})
+			w.Write(response)
+			return
+		} else if err == authenticate.InvalidTokenErr {
+			bm.Logger.WithError(err).Warn()
+			w.WriteHeader(http.StatusBadRequest)
+			response, _ := json.Marshal(map[string]interface{}{"message": authenticate.InvalidTokenErr.Error()})
+			w.Write(response)
+			return
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			bm.Logger.WithError(err).Warn("there was a problem with access token - maybe user does not exist")
+			return
+		}
 	}
 
 	// retrieve all books from database
@@ -49,7 +60,7 @@ func (bm *BookManagerServer) GetAllBooksHandler(w http.ResponseWriter, r *http.R
 	for _, b := range *books.Books {
 		temp := &GetBooksResponseBody{
 			Name:        b.Name,
-			Author:      b.FirstName + " " + b.LastName,
+			Author:      b.Author.FirstName + " " + b.Author.LastName,
 			Category:    b.Category,
 			Volume:      b.Volume,
 			PublishedAt: b.PublishedAt,
@@ -64,8 +75,8 @@ func (bm *BookManagerServer) GetAllBooksHandler(w http.ResponseWriter, r *http.R
 		"books": AllBooks,
 	})
 	if err != nil {
-		bm.Logger.WithError(err).Warn("error writing response body")
 		w.WriteHeader(http.StatusInternalServerError)
+		bm.Logger.WithError(err).Error("error trying to marshal the response message")
 		return
 	}
 	w.WriteHeader(http.StatusOK)

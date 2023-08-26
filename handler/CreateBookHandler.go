@@ -15,11 +15,11 @@ func (bm *BookManagerServer) CreateBookHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	// get access token from header
+	// get access token from header and check related errors
 	AuthorizationToken := r.Header.Get("Authorization")
 	if AuthorizationToken == "" {
 		resBody, _ := json.Marshal(map[string]interface{}{
-			"message": authenticate.InvalidTokenErr,
+			"message": authenticate.EmptyTokenErr.Error(),
 		})
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(resBody)
@@ -29,17 +29,21 @@ func (bm *BookManagerServer) CreateBookHandler(w http.ResponseWriter, r *http.Re
 	// get the username using the access token
 	username, err := bm.Authenticate.GetUsernameByToken(AuthorizationToken)
 	if err != nil {
-		if err == authenticate.CannotValidateToken {
+		if err == authenticate.CannotValidateTokenErr {
 			bm.Logger.WithError(err).Warn()
 			w.WriteHeader(http.StatusBadRequest)
+			response, _ := json.Marshal(map[string]interface{}{"message": authenticate.CannotValidateTokenErr.Error()})
+			w.Write(response)
 			return
 		} else if err == authenticate.InvalidTokenErr {
 			bm.Logger.WithError(err).Warn()
 			w.WriteHeader(http.StatusBadRequest)
+			response, _ := json.Marshal(map[string]interface{}{"message": authenticate.InvalidTokenErr.Error()})
+			w.Write(response)
 			return
 		} else {
 			w.WriteHeader(http.StatusBadRequest)
-			bm.Logger.WithError(err).Warn("there was a problem with access token")
+			bm.Logger.WithError(err).Warn("there was a problem with access token - maybe user does not exist")
 			return
 		}
 	}
@@ -47,13 +51,13 @@ func (bm *BookManagerServer) CreateBookHandler(w http.ResponseWriter, r *http.Re
 	// get user account by access token
 	account, err := bm.DB.GetUserByUsername(username)
 	if err != nil {
-		if err == db.UserNameNotFoundError {
+		if err == db.UserNameNotFoundErr {
 			bm.Logger.WithError(err).Warn()
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 		w.WriteHeader(http.StatusInternalServerError)
-		bm.Logger.WithError(err).Warn("error while retrieving user from db")
+		bm.Logger.WithError(err).Warn("error while retrieving user from db (get user by username")
 		return
 	}
 
@@ -72,36 +76,24 @@ func (bm *BookManagerServer) CreateBookHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	// unmarshalling request body data
-	var NewBook CreateBookRequestBody
+	var NewBook db.Book
 	err = json.Unmarshal(reqBody, &NewBook)
 	if err != nil {
 		bm.Logger.WithError(err).Warn("error while unmarshalling book")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	NewBook.UserID = account.ID
 
-	// insert new book to database by calling GormDB insert function
-	newBook := &db.Book{
-		Name:        NewBook.Name,
-		Category:    NewBook.Category,
-		Volume:      NewBook.Volume,
-		PublishedAt: NewBook.PublishedAt,
-		Summary:     NewBook.Summary,
-		Publisher:   NewBook.Publisher,
-		FirstName:   NewBook.Author.FirstName,
-		LastName:    NewBook.Author.LastName,
-		Birthday:    NewBook.Author.Birthday,
-		Nationality: NewBook.Author.Nationality,
-		UserID:      account.ID,
-	}
-
-	err = bm.DB.CreateNewBook(newBook)
+	// insert new book to database
+	err = bm.DB.CreateNewBook(&NewBook)
 	if err != nil {
-		bm.Logger.WithError(err).Warn("error while inserting new book")
+		bm.Logger.WithError(err).Warn("error while inserting new book (create new book)")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
+	// create response body
 	response, err := json.Marshal(map[string]interface{}{
 		"message": "book was created successfully",
 	})

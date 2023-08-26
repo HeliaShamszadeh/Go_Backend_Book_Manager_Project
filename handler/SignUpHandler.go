@@ -39,14 +39,25 @@ func (bm *BookManagerServer) SignUpHandler(w http.ResponseWriter, r *http.Reques
 	err = bm.DB.CreateNewUser(&NewUser)
 	if err != nil {
 		switch err {
-		case db.DuplicateUsernameError:
+		case db.DuplicateUsernameErr:
 			w.WriteHeader(http.StatusConflict)
+			response, _ := json.Marshal(map[string]interface{}{"message": db.DuplicateUsernameErr.Error()})
+			w.Write(response)
 			return
-		case db.DuplicateEmailError:
+		case db.DuplicateEmailErr:
 			w.WriteHeader(http.StatusConflict)
+			response, _ := json.Marshal(map[string]interface{}{"message": db.DuplicateEmailErr.Error()})
+			w.Write(response)
 			return
-		case db.DuplicatePhoneNumberError:
+		case db.DuplicatePhoneNumberErr:
 			w.WriteHeader(http.StatusConflict)
+			response, _ := json.Marshal(map[string]interface{}{"message": db.DuplicatePhoneNumberErr.Error()})
+			w.Write(response)
+			return
+		case db.GenderNotAllowedErr:
+			w.WriteHeader(http.StatusBadRequest)
+			response, _ := json.Marshal(map[string]interface{}{"message": db.GenderNotAllowedErr.Error()})
+			w.Write(response)
 			return
 		default:
 			w.WriteHeader(http.StatusBadRequest)
