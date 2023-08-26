@@ -12,12 +12,12 @@ import (
 
 // defining possible errors for defining database and CRUD
 var (
-	DuplicateEmailError       = errors.New("This Email is Already Taken")
-	DuplicateUsernameError    = errors.New("This Username is Already Taken")
-	DuplicatePhoneNumberError = errors.New("This Phone Number is Already Taken")
-	GenderNotAllowedError     = errors.New("Only female, male, or others are acceptable as genders")
-	UserNameNotFoundError     = errors.New("User not found")
-	BookNotFoundError         = errors.New("book not found")
+	DuplicateEmailErr       = errors.New("this email is already taken")
+	DuplicateUsernameErr    = errors.New("this username is already taken")
+	DuplicatePhoneNumberErr = errors.New("this phone number is already taken")
+	GenderNotAllowedErr     = errors.New("only female, male, or others are acceptable as genders")
+	UserNameNotFoundErr     = errors.New("user not found")
+	BookNotFoundErr         = errors.New("book not found")
 )
 
 // GormDB is a struct which keeps info of config and database
@@ -63,21 +63,21 @@ func (gdb *GormDB) CreateNewUser(user *User) error {
 	var count int64
 	gdb.Db.Model(&User{}).Where("username = ?", user.Username).Count(&count)
 	if count != 0 {
-		return DuplicateUsernameError
+		return DuplicateUsernameErr
 	}
 
 	gdb.Db.Model(&User{}).Where("email = ?", user.Email).Count(&count)
 	if count != 0 {
-		return DuplicateEmailError
+		return DuplicateEmailErr
 	}
 
 	gdb.Db.Model(&User{}).Where("phone_number = ?", user.PhoneNumber).Count(&count)
 	if count != 0 {
-		return DuplicatePhoneNumberError
+		return DuplicatePhoneNumberErr
 	}
 
 	if !(user.Gender == "male" || user.Gender == "female" || user.Gender == "others") {
-		return GenderNotAllowedError
+		return GenderNotAllowedErr
 	}
 	EncryptedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), 4)
 	if err != nil {
@@ -122,7 +122,7 @@ func (gdb *GormDB) GetBookById(id int) (*Book, error) {
 	var count int64
 	gdb.Db.Model(&Book{}).Where("id = ?", id).Count(&count)
 	if count == 0 {
-		return nil, BookNotFoundError
+		return nil, BookNotFoundErr
 	}
 	var book Book
 	err := gdb.Db.Where("id = ?", id).First(&book).Error
@@ -138,7 +138,7 @@ func (gdb *GormDB) UpdateBook(book *Book, name, category string) error {
 	var count int64
 	gdb.Db.Model(&Book{}).Where("id = ?", book.ID).Count(&count)
 	if count == 0 {
-		return BookNotFoundError
+		return BookNotFoundErr
 	}
 	return gdb.Db.Model(Book{}).Where("id = ?", book.ID).Update("name", name).Update("category", category).Error
 }
@@ -148,7 +148,7 @@ func (gdb *GormDB) DeleteBookById(id int) error {
 	var count int64
 	gdb.Db.Model(&Book{}).Where("id = ?", id).Count(&count)
 	if count == 0 {
-		return BookNotFoundError
+		return BookNotFoundErr
 	}
 	return gdb.Db.Delete(&Book{}, id).Error
 }

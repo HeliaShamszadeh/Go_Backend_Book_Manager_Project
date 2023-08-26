@@ -11,10 +11,10 @@ import (
 )
 
 var (
-	IncorrectPasswordErr = errors.New("incorrect password")
-	EmptyTokenErr        = errors.New("empty token string")
-	InvalidTokenErr      = errors.New("invalid access token")
-	CannotValidateToken  = errors.New("cannot validate token")
+	IncorrectPasswordErr   = errors.New("incorrect password")
+	EmptyTokenErr          = errors.New("empty token string")
+	InvalidTokenErr        = errors.New("invalid access token")
+	CannotValidateTokenErr = errors.New("cannot validate token")
 )
 
 type Authenticate struct {
@@ -106,7 +106,7 @@ func (a *Authenticate) GetUsernameByToken(token string) (username string, err er
 		if err == jwt.ErrSignatureInvalid {
 			return "", InvalidTokenErr
 		} else {
-			return "", CannotValidateToken
+			return "", CannotValidateTokenErr
 		}
 	}
 

@@ -20,10 +20,9 @@ func (bm *BookManagerServer) UpdateBookHandler(w http.ResponseWriter, r *http.Re
 	// get access token from header and check related errors
 	AuthorizationToken := r.Header.Get("Authorization")
 	if AuthorizationToken == "" {
-		response := map[string]interface{}{
-			"message": authenticate.InvalidTokenErr,
-		}
-		resBody, _ := json.Marshal(response)
+		resBody, _ := json.Marshal(map[string]interface{}{
+			"message": authenticate.EmptyTokenErr.Error(),
+		})
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write(resBody)
 		return
@@ -32,10 +31,25 @@ func (bm *BookManagerServer) UpdateBookHandler(w http.ResponseWriter, r *http.Re
 	// check if this username exists
 	username, err := bm.Authenticate.GetUsernameByToken(AuthorizationToken)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		bm.Logger.WithError(err).Warn("could not login the user")
-		return
+		if err == authenticate.CannotValidateTokenErr {
+			bm.Logger.WithError(err).Warn()
+			w.WriteHeader(http.StatusBadRequest)
+			response, _ := json.Marshal(map[string]interface{}{"message": authenticate.CannotValidateTokenErr.Error()})
+			w.Write(response)
+			return
+		} else if err == authenticate.InvalidTokenErr {
+			bm.Logger.WithError(err).Warn()
+			w.WriteHeader(http.StatusBadRequest)
+			response, _ := json.Marshal(map[string]interface{}{"message": authenticate.InvalidTokenErr.Error()})
+			w.Write(response)
+			return
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			bm.Logger.WithError(err).Warn("there was a problem with access token - maybe user does not exist")
+			return
+		}
 	}
+
 	// get user's account by username
 	account, err := bm.DB.GetUserByUsername(username)
 	if err != nil {
@@ -61,7 +75,7 @@ func (bm *BookManagerServer) UpdateBookHandler(w http.ResponseWriter, r *http.Re
 	// retrieve the book from database
 	ReturnedBook, err := bm.DB.GetBookById(BookIdInt)
 	if err != nil {
-		if err == db.BookNotFoundError {
+		if err == db.BookNotFoundErr {
 			w.WriteHeader(http.StatusBadRequest)
 			resBody, _ := json.Marshal(map[string]interface{}{"message": "book not found"})
 			w.Write(resBody)
@@ -107,6 +121,12 @@ func (bm *BookManagerServer) UpdateBookHandler(w http.ResponseWriter, r *http.Re
 	// marshalling a success message
 	response, err := json.Marshal(map[string]interface{}{
 		"message": "book was updated successfully!"})
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		bm.Logger.WithError(err).Error("error trying to marshal the response message")
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 	w.Write(response)
 }

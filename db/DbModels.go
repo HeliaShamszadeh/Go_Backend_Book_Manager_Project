@@ -20,15 +20,19 @@ type User struct {
 // Book struct which holds book info
 type Book struct {
 	gorm.Model
-	Name        string    `gorm:"type:varchar(255)"`
-	Category    string    `gorm:"type:varchar(255)"`
-	Volume      int       `gorm:"type:integer"`
-	PublishedAt time.Time `gorm:"type:date"`
-	Summary     string    `gorm:"type:text"`
-	Publisher   string    `gorm:"type:varchar(255)"`
-	FirstName   string    `gorm:"type:varchar(50)"`
-	LastName    string    `gorm:"type:varchar(50)"`
-	Birthday    time.Time `gorm:"type:date"`
-	Nationality string    `gorm:"type:varchar(50)"`
-	UserID      uint
+	Name        string    `gorm:"type:varchar(255)" json:"name"`
+	Category    string    `gorm:"type:varchar(255)" json:"category"`
+	Volume      int       `gorm:"type:integer" json:"volume"`
+	PublishedAt time.Time `gorm:"type:date" json:"published_at"`
+	Summary     string    `gorm:"type:text" json:"summary"`
+	Publisher   string    `gorm:"type:varchar(255)" json:"publisher"`
+	Author      Author    `gorm:"embedded" json:"author"`
+	UserID      uint      `gorm:"type:int"`
+}
+
+type Author struct {
+	FirstName   string    `gorm:"type:varchar(50)" json:"first_name"`
+	LastName    string    `gorm:"type:varchar(50)" json:"last_name"`
+	Birthday    time.Time `gorm:"type:date" json:"birthday"`
+	Nationality string    `gorm:"type:varchar(50)" json:"nationality"`
 }
